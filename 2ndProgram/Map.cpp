@@ -12,61 +12,54 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <istream>
-#include <sstream>
-#include <algorithm>
-#include <iostream> 
-#include <cstring> 
-#include <iterator>
 #include <unordered_map>
-#include <map>
-#include <memory>
-#include <set>
-using namespace std;
+#include <queue>
+#include <algorithm>
 
-class MostPopular 
-{
-  public:
-    std::unordered_map<std::string, int> mmap;
+class MostPopular {
+    std::unordered_map<std::string, int> stockData;
 
-  public:
-    void addTrade(const std::string& stock, int shares) { 
-        
-        // adding the key->value in the mmap
-        if(mmap.find(stock) == mmap.end())
-          mmap[stock] = shares;
-        else {
-          auto itr = mmap.find(stock);
-          int newval = shares + itr->second;
-          mmap[stock] = newval;
-        }
+public:
+    void addTrade(const std::string& stock, int shares) {
+        stockData[stock] += shares;
     }
 
-    void printTop(int k) const {
-      // sort map by key
-      cout << "======map sort by key=====" <<endl;
-      std::map<std::string, int, std::less<string>> m = {};
-      m.insert(mmap.begin(), mmap.end());
-      for(auto itrp : m) {
-          cout << itrp.first << " : " << itrp.second <<endl;
-      }
+    void printTop(int nbrOfStocks) const {
+        if (nbrOfStocks <= 0) return;
 
-      // sort map by value (convert map into vector and then sort the vector)
-      cout << "\n=====map sort by value======" <<endl;
-      std::vector<std::pair<string, int>> pairs;
-      for (auto itr = m.begin(); itr != m.end(); ++itr)
-          pairs.push_back(*itr);
-      sort(pairs.begin(), pairs.end(), [=](std::pair<string, int>& a, std::pair<string, int>& b)
-                                        {return a.second > b.second;} );
-      
-      //[printing the all values of the vector.
-      for(auto pval : pairs) {
-          cout << pval.first << " : " << pval.second << endl;
-      }
-      cout << "\n===Printing only top k values===" << endl;
-      for(auto pval = pairs.begin(); pval != pairs.begin()+k ; ++pval) {
-          cout << pval->first << " : " << pval->second << endl;
-      }
+        // Use a pair for the heap: {shares, stock_name}
+        typedef std::pair<int, std::string> StockPair;
+
+        // We use a custom comparator to create a Min-Heap.
+        // The smallest value will always be at the top.
+        auto cmp = [](const StockPair& a, const StockPair& b) {
+            if (a.first != b.first) return a.first > b.first; // Min-heap on shares
+            return a.second < b.second; // Tie-breaker for heap stability
+        };
+
+        std::priority_queue<StockPair, std::vector<StockPair>, decltype(cmp)> pq(cmp);
+
+        for (auto const& [name, shares] : stockData) {
+            pq.push({shares, name});
+            
+            // Keep the heap size restricted to nbrOfStocks
+            if (pq.size() > (size_t)nbrOfStocks) {
+                pq.pop();
+            }
+        }
+
+        // The heap now contains the top N, but in reverse order (smallest of top N first).
+        // Transfer to a vector and reverse for final output.
+        std::vector<StockPair> result;
+        while (!pq.empty()) {
+            result.push_back(pq.top());
+            pq.pop();
+        }
+        std::reverse(result.begin(), result.end());
+
+        for (const auto& p : result) {
+            std::cout << p.second << " " << p.first << std::endl;
+        }
     }
 };
 
@@ -91,4 +84,5 @@ int main(int argc, char** argv)
               << "BP 400\n"
               << "VODAFONE 400" << std::endl;*/
     return 0;
+
 }
